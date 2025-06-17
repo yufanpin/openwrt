@@ -30,6 +30,11 @@ EOF
 
 echo "✅ /etc/opkg/distfeeds.conf 已生成并指向 PKU 镜像"
 
+
+
+
+
+
 # 设置 LuCI 默认语言为中文、默认主题为 bootstrap
 uci set luci.main.lang=zh_cn
 uci set luci.main.mediaurlbase=/luci-static/bootstrap
