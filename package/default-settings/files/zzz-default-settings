@@ -3,7 +3,7 @@
 # 创建 root 用户的 crontab 文件
 touch /etc/crontabs/root
 
-# 设置 LuCI 默认语言和主题
+# 设置 LuCI 默认语言与主题
 uci set luci.main.lang=zh_cn
 uci set luci.main.mediaurlbase=/luci-static/bootstrap
 uci commit luci
@@ -13,54 +13,28 @@ uci set system.@system[0].timezone=CST-8
 uci set system.@system[0].zonename=Asia/Shanghai
 uci commit system
 
-# 允许自动挂载未定义设备
+# 启用自动挂载
 uci set fstab.@global[0].anon_mount=1
 uci commit fstab
 
 # 创建 ip 命令软链接
 ln -sf /sbin/ip /usr/bin/ip
 
-# 获取版本和架构
-if [ -f /etc/openwrt_release ]; then
-  . /etc/openwrt_release
-  REL="${DISTRIB_RELEASE:-}"
-else
-  REL=""
-fi
-ARCH=$(opkg print-architecture 2>/dev/null | awk 'NR==2 {print $2}')
+# ✅ 自动替换 distfeeds.conf 为北京大学镜像源
+arch=$(grep DISTRIB_ARCH /etc/openwrt_release | cut -d"'" -f2)
+branch=$(grep DISTRIB_RELEASE /etc/openwrt_release | cut -d"'" -f2)
+mirror_base="http://mirrors.pku.edu.cn/immortalwrt/releases/$branch/packages/$arch"
 
-# 判断版本和架构是否存在
-if [ -z "$REL" ] || [ -z "$ARCH" ]; then
-  echo "无法检测版本或架构，保持默认软件源"
-else
-  if command -v apk >/dev/null 2>&1; then
-    # apk 快照源
-    cat > /etc/opkg/distfeeds.conf <<-EOF
-src/gz openwrt_base https://mirrors.pku.edu.cn/openwrt/snapshots/packages/${ARCH}/base
-src/gz openwrt_luci https://mirrors.pku.edu.cn/openwrt/snapshots/packages/${ARCH}/luci
-src/gz openwrt_packages https://mirrors.pku.edu.cn/openwrt/snapshots/packages/${ARCH}/packages
-src/gz openwrt_routing https://mirrors.pku.edu.cn/openwrt/snapshots/packages/${ARCH}/routing
-src/gz openwrt_telephony https://mirrors.pku.edu.cn/openwrt/snapshots/packages/${ARCH}/telephony
-src/gz openwrt_video https://mirrors.pku.edu.cn/openwrt/snapshots/packages/${ARCH}/video
+# 清空并写入新的源
+cat > /etc/opkg/distfeeds.conf <<EOF
+src/gz openwrt_base $mirror_base/base
+src/gz openwrt_luci $mirror_base/luci
+src/gz openwrt_packages $mirror_base/packages
+src/gz openwrt_routing $mirror_base/routing
+src/gz openwrt_telephony $mirror_base/telephony
 EOF
-    echo "使用 apk 快照源，架构: $ARCH"
-  else
-    # opkg 发布源
-    cat > /etc/opkg/distfeeds.conf <<-EOF
-src/gz openwrt_base https://mirrors.pku.edu.cn/openwrt/releases/${REL}/packages/${ARCH}/base
-src/gz openwrt_luci https://mirrors.pku.edu.cn/openwrt/releases/${REL}/packages/${ARCH}/luci
-src/gz openwrt_packages https://mirrors.pku.edu.cn/openwrt/releases/${REL}/packages/${ARCH}/packages
-src/gz openwrt_routing https://mirrors.pku.edu.cn/openwrt/releases/${REL}/packages/${ARCH}/routing
-src/gz openwrt_telephony https://mirrors.pku.edu.cn/openwrt/releases/${REL}/packages/${ARCH}/telephony
-EOF
-    echo "使用 opkg 发布源，版本: $REL，架构: $ARCH"
-  fi
-fi
 
-# 清理无用源
-sed -i '/lienol/d;/other/d;s/# //g' /etc/opkg/distfeeds.conf
-
-# IPv6 DHCP 和路由通告配置
+# 设置 DHCP 为 IPv6 管理模式
 uci set dhcp.lan.ra='server'
 uci -q del dhcp.lan.dhcpv6
 uci set dhcp.lan.dns_service='0'
@@ -68,30 +42,34 @@ uci set dhcp.lan.ra_management='1'
 uci -q del dhcp.lan.ra_slaac
 uci commit dhcp
 
-# 解除无线禁用，启用所有无线接口
+# 启用 WiFi
 sed -i '/option disabled/d' /etc/config/wireless
 sed -i '/set wireless.radio${devidx}.disabled/d' /lib/wifi/mac80211.sh
 wifi up
 
-# 修改系统版本显示
+# 设置版本信息
 sed -i '/DISTRIB_DESCRIPTION/d' /etc/openwrt_release
-echo "DISTRIB_DESCRIPTION='OpenWrt 24.10 with PKU Mirror'" >> /etc/openwrt_release
+echo "DISTRIB_DESCRIPTION='OpenWrt 24.10'" >> /etc/openwrt_release
 
-# 删除状态页，精简UI
+# 隐藏状态页默认视图
 rm -rf /usr/lib/lua/luci/view/admin_status/index
 
-# 替换页脚 GitHub 链接为 lienol
+# 替换主题 footer 中的 openwrt/luci 链接为 lienol/openwrt-luci
 sed -i 's#openwrt/luci#lienol/openwrt-luci#g' /usr/lib/lua/luci/view/themes/*/footer.htm
 
-# 禁用部分服务，节约资源
-for svc in php7-fastcgi php7-fpm php8-fastcgi php8-fpm softethervpnbridge softethervpnserver softethervpnclient haproxy kcptun; do
-  /etc/init.d/$svc disable 2>/dev/null
+# 禁用部分不必要服务
+for svc in \
+    php7-fastcgi php7-fpm \
+    php8-fastcgi php8-fpm \
+    softethervpnbridge softethervpnserver softethervpnclient \
+    haproxy kcptun; do
+    /etc/init.d/$svc disable 2>/dev/null
 done
 
-# 修正 init 脚本权限
+# 修改权限
 chmod 0755 /etc/init.d/*
 
-# 清除 LuCI 缓存
+# 清除 Luci 缓存
 rm -rf /tmp/luci-*cache
 
 exit 0
