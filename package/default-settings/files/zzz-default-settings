@@ -26,7 +26,9 @@ ln -sf /sbin/ip /usr/bin/ip
 # ✅ 自动替换 distfeeds.conf 为北京大学镜像源
 arch=$(grep DISTRIB_ARCH /etc/openwrt_release | cut -d"'" -f2)
 branch=$(grep DISTRIB_RELEASE /etc/openwrt_release | cut -d"'" -f2)
-mirror_base="http://mirrors.pku.edu.cn/immortalwrt/releases/$branch/packages/$arch"
+# mirror_base="http://mirrors.pku.edu.cn/immortalwrt/releases/$branch/packages/$arch"
+mirror_base="https://mirrors.pku.edu.cn/openwrt/releases/$branch/packages/$arch"
+# 例子：https://mirrors.pku.edu.cn/openwrt/releases/21.02.0/packages/aarch64_cortex-a53/base/
 
 # 清空并写入新的源
 cat > /etc/opkg/distfeeds.conf <<EOF
