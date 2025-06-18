@@ -20,6 +20,9 @@ uci commit fstab
 # 创建 ip 命令软链接
 ln -sf /sbin/ip /usr/bin/ip
 
+
+
+
 # ✅ 自动替换 distfeeds.conf 为北京大学镜像源
 arch=$(grep DISTRIB_ARCH /etc/openwrt_release | cut -d"'" -f2)
 branch=$(grep DISTRIB_RELEASE /etc/openwrt_release | cut -d"'" -f2)
@@ -33,6 +36,11 @@ src/gz openwrt_packages $mirror_base/packages
 src/gz openwrt_routing $mirror_base/routing
 src/gz openwrt_telephony $mirror_base/telephony
 EOF
+
+
+
+
+
 
 # 设置 DHCP 为 IPv6 管理模式
 uci set dhcp.lan.ra='server'
