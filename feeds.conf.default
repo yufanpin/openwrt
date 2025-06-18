@@ -1,5 +1,5 @@
 #src-git packages https://github.com/Lienol/openwrt-packages.git;24.10
-使用官方的
+#使用官方的
 #src-git packages https://github.com/openwrt/packages.git
 src-git packages https://github.com/coolsnowwolf/packages
 
