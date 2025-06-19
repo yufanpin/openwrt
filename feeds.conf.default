@@ -9,6 +9,6 @@ src-git telephony https://github.com/openwrt/telephony.git;openwrt-24.10
 src-git lienol https://github.com/Lienol/openwrt-package.git;main
 src-git other https://github.com/Lienol/openwrt-package.git;other
 
-
+src-git istore https://github.com/linkease/istore;main
 
 
